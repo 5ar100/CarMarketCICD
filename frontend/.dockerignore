@@ -1,0 +1,12 @@
+# node_modules is hundreds of MB; npm ci inside the image installs it fresh
+node_modules/
+
+# Previous build output - regenerated inside the image
+build/
+
+# Environment and IDE files
+.env
+*.env
+.idea/
+.vscode/
+*.DS_Store
