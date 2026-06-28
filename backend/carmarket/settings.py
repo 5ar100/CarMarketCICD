@@ -1,9 +1,11 @@
 from pathlib import Path
 from datetime import timedelta
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-carmarket-secret-key-change-in-production-xyz123'
+# Read from env var so Docker/CI can inject a real secret; falls back to dev default
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-carmarket-secret-key-change-in-production-xyz123')
 
 DEBUG = True
 
@@ -53,14 +55,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'carmarket.wsgi.application'
 
+# All DB settings come from environment variables.
+# In Docker Compose the host will be the service name (e.g. "db"), not 127.0.0.1.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'carmarket_db',
-        'USER': 'carmarket_user',
-        'PASSWORD': 'carmarket_pass',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'carmarket_db'),
+        'USER': os.environ.get('DB_USER', 'carmarket_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'carmarket_pass'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 

@@ -1,0 +1,22 @@
+# Compiled Python files - not needed inside the image
+__pycache__/
+*.pyc
+*.pyo
+
+# Local database - the container uses PostgreSQL, not SQLite
+db.sqlite3
+
+# User-uploaded media - will be mounted as a volume in Docker Compose
+media/
+
+# Environment files - secrets must not be baked into the image
+.env
+*.env
+
+# Static files are regenerated inside the image via collectstatic
+staticfiles/
+
+# IDE and OS files
+.idea/
+.vscode/
+*.DS_Store

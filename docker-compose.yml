@@ -1,0 +1,63 @@
+services:
+
+  # ── PostgreSQL database ────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: carmarket_db
+      POSTGRES_USER: carmarket_user
+      POSTGRES_PASSWORD: carmarket_pass
+    volumes:
+      # Named volume keeps data when the container is stopped or recreated
+      - postgres_data:/var/lib/postgresql/data
+    # Backend waits for this healthcheck before starting
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carmarket_user -d carmarket_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Django backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    environment:
+      # DB_HOST must be the service name "db", not 127.0.0.1
+      DB_HOST: db
+      DB_NAME: carmarket_db
+      DB_USER: carmarket_user
+      DB_PASSWORD: carmarket_pass
+      DB_PORT: 5432
+    volumes:
+      # Uploaded car images persist across container restarts
+      - media_files:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        # Wait until the db healthcheck passes before starting this service
+        condition: service_healthy
+    # Override the Dockerfile CMD to run DB migrations before starting gunicorn
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn carmarket.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+
+  # ── React frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the React build at compile time.
+        # localhost:8000 is correct because the browser (on the host machine)
+        # calls the backend directly — not through Docker's internal network.
+        REACT_APP_API_URL: http://localhost:8000
+    ports:
+      # Map nginx container port 80 → host port 3000 (same as local dev)
+      - "3000:80"
+    depends_on:
+      - backend
+
+# ── Named volumes ──────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  media_files:
